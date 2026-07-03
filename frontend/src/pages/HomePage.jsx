@@ -56,7 +56,7 @@ export default function HomePage() {
         const response = await fetch(`${backendUrl}/health`);
         if (response.ok) {
           setConnectionStatus(
-            "Connected to PayTrace backend. Ready to receive Nomba payments.",
+            "Connected to PayTrace backend. Ready to receive Nomba sandbox test payments.",
           );
           setConnectionState("connected");
         } else {
@@ -241,16 +241,15 @@ export default function HomePage() {
 
         <p className="nomba-card-copy">{connectionStatus}</p>
         <p className="nomba-card-copy nomba-card-copy--muted">
-          Test credentials are usually for sandbox/demo environments. For real
-          payments, the merchant logs into the Nomba merchant dashboard, opens
-          Developer or Webhooks, and pastes the webhook URL from the backend
-          endpoint.
+          For sandbox/demo testing, the person with the Nomba credentials can
+          open the sandbox dashboard, go to Developer or Webhooks, and paste the
+          webhook URL from the backend endpoint.
         </p>
         <ol className="nomba-steps">
-          <li>Open the Nomba merchant dashboard.</li>
+          <li>Open the Nomba sandbox or merchant dashboard.</li>
           <li>Go to Developer, Integrations, or Webhooks.</li>
           <li>Paste the webhook URL from the backend and save it.</li>
-          <li>Trigger a payment test to see the dashboard update.</li>
+          <li>Trigger a test payment to see the dashboard update.</li>
         </ol>
       </article>
 
