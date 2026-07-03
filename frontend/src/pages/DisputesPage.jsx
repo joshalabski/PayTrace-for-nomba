@@ -1,5 +1,8 @@
 import { disputes, formatCurrency } from "../data/mockData";
 
+// NOTE: the backend has no /disputes endpoint yet — this still reads
+// from mockData.js on purpose. Wire this up once a disputes route exists.
+
 export default function DisputesPage() {
   return (
     <section className="view view--active">
