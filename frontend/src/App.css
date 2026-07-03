@@ -840,6 +840,80 @@ body {
   gap: 10px;
   margin-top: 14px;
 }
+
+.nomba-card {
+  margin-top: 14px;
+  padding: 16px;
+}
+
+.nomba-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.nomba-card-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 2px;
+}
+
+.nomba-card-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.nomba-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nomba-pill--connected {
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+}
+
+.nomba-pill--error {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.nomba-pill--pending {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.nomba-card-copy {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-soft);
+  margin-bottom: 8px;
+}
+
+.nomba-card-copy--muted {
+  font-size: 12px;
+}
+
+.nomba-steps {
+  padding-left: 18px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
 .ministat {
   background: var(--surface);
   border: 1px solid var(--border);

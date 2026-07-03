@@ -1,56 +1,153 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { merchant, transactions, formatCurrency } from "../data/mockData";
+import {
+  merchant,
+  transactions as mockTransactions,
+  formatCurrency,
+} from "../data/mockData";
 
 export default function HomePage() {
-  const successful = transactions.filter(
+  const [dashboardTransactions, setDashboardTransactions] =
+    useState(mockTransactions);
+  const successful = dashboardTransactions.filter(
     (tx) => tx.status === "success",
   ).length;
-  const pending = transactions.filter((tx) => tx.status === "pending").length;
-  const failed = transactions.filter((tx) => tx.status === "failed").length;
-  const received = transactions
+  const pending = dashboardTransactions.filter(
+    (tx) => tx.status === "pending",
+  ).length;
+  const failed = dashboardTransactions.filter(
+    (tx) => tx.status === "failed",
+  ).length;
+  const received = dashboardTransactions
     .filter((tx) => tx.status === "success")
     .reduce((sum, tx) => sum + tx.amount, 0);
-  const expected = transactions.reduce((sum, tx) => sum + tx.amount, 0);
+  const expected = dashboardTransactions.reduce(
+    (sum, tx) => sum + tx.amount,
+    0,
+  );
   const gap = expected - received;
   const rawPercent = expected ? Math.round((received / expected) * 100) : 0;
   const percent = Math.max(0, Math.min(100, rawPercent));
   const radius = 52;
   const circumference = 2 * Math.PI * radius;
   const strokeOffset = circumference - (percent / 100) * circumference;
-  const [toast, setToast] = useState("A new transfer is now in review.");
-  const [toastVisible, setToastVisible] = useState(true);
+  const [toast, setToast] = useState("");
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastTimeoutRef = useRef(null);
+  const [connectionStatus, setConnectionStatus] = useState(
+    "Checking Nomba connection...",
+  );
+  const [connectionState, setConnectionState] = useState("pending");
 
   useEffect(() => {
-    const messages = [
-      "Amina paid NGN 128,500 for a card purchase.",
-      "Tunde's transfer is pending settlement.",
-      "Ngozi's payment settled successfully.",
-      "Bola's dispute is now under review.",
-    ];
-
-    let index = 0;
-    let timeoutId;
-
-    const cycleToast = () => {
-      setToast(messages[index % messages.length]);
-      setToastVisible(true);
-      index += 1;
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
-      timeoutId = window.setTimeout(() => setToastVisible(false), 2600);
-    };
-
-    cycleToast();
-    const timer = window.setInterval(cycleToast, 9000);
-
     return () => {
-      window.clearInterval(timer);
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
+      if (toastTimeoutRef.current) {
+        window.clearTimeout(toastTimeoutRef.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    const backendUrl =
+      import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+    const checkConnection = async () => {
+      try {
+        const response = await fetch(`${backendUrl}/health`);
+        if (response.ok) {
+          setConnectionStatus(
+            "Connected to PayTrace backend. Ready to receive Nomba payments.",
+          );
+          setConnectionState("connected");
+        } else {
+          setConnectionStatus(
+            "Backend not reachable yet. Start the server and refresh the page.",
+          );
+          setConnectionState("error");
+        }
+        // eslint-disable-next-line no-unused-vars
+      } catch (error) {
+        setConnectionStatus(
+          "Backend not reachable yet. Start the server and refresh the page.",
+        );
+        setConnectionState("error");
+      }
+    };
+
+    const loadTransactions = async () => {
+      try {
+        const response = await fetch(`${backendUrl}/payments`);
+        if (!response.ok) {
+          return;
+        }
+
+        const incoming = await response.json();
+        if (!Array.isArray(incoming) || incoming.length === 0) {
+          return;
+        }
+
+        setDashboardTransactions((current) => {
+          const existing = new Map(current.map((item) => [item.id, item]));
+          const next = [...current];
+          let newPaymentToast = null;
+
+          incoming.forEach((payment) => {
+            const normalizedPayment = {
+              id: payment.id || `nomba-${payment.receivedAt || Date.now()}`,
+              customer: payment.customer || "Nomba customer",
+              method: payment.method || "card",
+              status:
+                payment.status === "success"
+                  ? "success"
+                  : payment.status === "failed"
+                    ? "failed"
+                    : "pending",
+              amount: Number(payment.amount || 0),
+              date: payment.receivedAt || new Date().toISOString(),
+            };
+
+            if (!existing.has(normalizedPayment.id)) {
+              next.unshift(normalizedPayment);
+              existing.set(normalizedPayment.id, normalizedPayment);
+              newPaymentToast = normalizedPayment;
+            }
+          });
+
+          if (newPaymentToast) {
+            const statusMessage =
+              newPaymentToast.status === "success"
+                ? "settled"
+                : newPaymentToast.status === "failed"
+                  ? "failed"
+                  : "is pending";
+            if (toastTimeoutRef.current) {
+              window.clearTimeout(toastTimeoutRef.current);
+            }
+            setToast(
+              `${newPaymentToast.customer} ${statusMessage} a payment of ${formatCurrency(newPaymentToast.amount)}.`,
+            );
+            setToastVisible(true);
+            toastTimeoutRef.current = window.setTimeout(() => {
+              setToastVisible(false);
+              toastTimeoutRef.current = null;
+            }, 2600);
+          }
+
+          return next;
+        });
+      } catch (error) {
+        console.error("Unable to load Nomba payments", error);
+      }
+    };
+
+    checkConnection();
+    loadTransactions();
+    const poller = window.setInterval(() => {
+      checkConnection();
+      loadTransactions();
+    }, 5000);
+
+    return () => window.clearInterval(poller);
   }, []);
 
   return (
@@ -127,6 +224,36 @@ export default function HomePage() {
         </div>
       </div>
 
+      <article className="card nomba-card">
+        <div className="nomba-card-head">
+          <div>
+            <p className="nomba-card-label">Nomba connection</p>
+            <h2 className="nomba-card-title">Merchant link status</h2>
+          </div>
+          <span className={`nomba-pill nomba-pill--${connectionState}`}>
+            {connectionState === "connected"
+              ? "Live"
+              : connectionState === "error"
+                ? "Offline"
+                : "Checking"}
+          </span>
+        </div>
+
+        <p className="nomba-card-copy">{connectionStatus}</p>
+        <p className="nomba-card-copy nomba-card-copy--muted">
+          Test credentials are usually for sandbox/demo environments. For real
+          payments, the merchant logs into the Nomba merchant dashboard, opens
+          Developer or Webhooks, and pastes the webhook URL from the backend
+          endpoint.
+        </p>
+        <ol className="nomba-steps">
+          <li>Open the Nomba merchant dashboard.</li>
+          <li>Go to Developer, Integrations, or Webhooks.</li>
+          <li>Paste the webhook URL from the backend and save it.</li>
+          <li>Trigger a payment test to see the dashboard update.</li>
+        </ol>
+      </article>
+
       <div className="quick-actions">
         <Link className="qa qa--primary" to="/activity">
           <svg
@@ -162,7 +289,7 @@ export default function HomePage() {
       </div>
 
       <div
-        className={`toast ${toastVisible ? "show" : ""}`}
+        className={`toast ${toastVisible && toast ? "show" : ""}`}
         role="status"
         aria-live="polite"
       >
