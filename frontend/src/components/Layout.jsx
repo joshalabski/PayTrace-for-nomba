@@ -39,7 +39,7 @@ export default function Layout() {
             <span className="brand-name">
               Nomba<span className="brand-accent">Pulse</span>
             </span>
-            <span className="brand-sub">Merchant dashboard</span>
+            <span className="brand-sub">Sandbox testing</span>
           </div>
         </div>
 
