@@ -37,7 +37,7 @@ export default function Layout() {
           </div>
           <div className="brand-text">
             <span className="brand-name">
-              Nomba<span className="brand-accent">Pulse</span>
+              Pay<span className="brand-accent">Trace</span>
             </span>
             <span className="brand-sub">Sandbox testing</span>
           </div>
