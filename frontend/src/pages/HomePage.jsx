@@ -1,14 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  merchant,
-  transactions as mockTransactions,
-  formatCurrency,
-} from "../data/mockData";
+import { formatCurrency } from "../utils/format";
+import { getMerchantProfile } from "../api/client";
 
 export default function HomePage() {
-  const [dashboardTransactions, setDashboardTransactions] =
-    useState(mockTransactions);
+  const [dashboardTransactions, setDashboardTransactions] = useState([]);
+  const [merchantName, setMerchantName] = useState("");
+
+  useEffect(() => {
+    const loadMerchant = async () => {
+      try {
+        const profile = await getMerchantProfile();
+        setMerchantName(profile?.name && profile.name !== "Not set" ? profile.name : "Merchant");
+      } catch (err) {
+        console.warn("Could not load merchant profile:", err.message);
+        setMerchantName("Merchant");
+      }
+    };
+    loadMerchant();
+  }, []);
+
   const successful = dashboardTransactions.filter(
     (tx) => tx.status === "success",
   ).length;
@@ -35,7 +46,7 @@ export default function HomePage() {
   const [toastVisible, setToastVisible] = useState(false);
   const toastTimeoutRef = useRef(null);
   const [connectionStatus, setConnectionStatus] = useState(
-    "Checking Nomba connection...",
+    "Checking connection...",
   );
   const [connectionState, setConnectionState] = useState("pending");
 
@@ -55,9 +66,7 @@ export default function HomePage() {
       try {
         const response = await fetch(`${backendUrl}/health`);
         if (response.ok) {
-          setConnectionStatus(
-            "Connected to PayTrace backend. Ready to receive Nomba sandbox test payments.",
-          );
+          setConnectionStatus("Connected. Ready to receive payments.");
           setConnectionState("connected");
         } else {
           setConnectionStatus(
@@ -82,7 +91,7 @@ export default function HomePage() {
         }
 
         const incoming = await response.json();
-        if (!Array.isArray(incoming) || incoming.length === 0) {
+        if (!Array.isArray(incoming)) {
           return;
         }
 
@@ -94,7 +103,7 @@ export default function HomePage() {
           incoming.forEach((payment) => {
             const normalizedPayment = {
               id: payment.id || `nomba-${payment.receivedAt || Date.now()}`,
-              customer: payment.customer || "Nomba customer",
+              customer: payment.customer || "Customer",
               method: payment.method || "card",
               status:
                 payment.status === "success"
@@ -136,7 +145,7 @@ export default function HomePage() {
           return next;
         });
       } catch (error) {
-        console.error("Unable to load Nomba payments", error);
+        console.error("Unable to load payments", error);
       }
     };
 
@@ -154,7 +163,7 @@ export default function HomePage() {
     <section className="view view--active">
       <div className="greeting">
         <p className="greeting-hi">Good day,</p>
-        <h1 className="greeting-name">{merchant.business}</h1>
+        <h1 className="greeting-name">{merchantName || "..."}</h1>
       </div>
 
       <article className="card moneygap" id="moneyGapCard">
@@ -203,9 +212,11 @@ export default function HomePage() {
         </div>
 
         <p className="moneygap-note">
-          {failed > 0
-            ? `${failed} failed payment${failed > 1 ? "s" : ""} need attention.`
-            : "Every expected payment has landed."}
+          {dashboardTransactions.length === 0
+            ? "No payments received yet."
+            : failed > 0
+              ? `${failed} failed payment${failed > 1 ? "s" : ""} need attention.`
+              : "Every expected payment has landed."}
         </p>
       </article>
 
@@ -240,17 +251,6 @@ export default function HomePage() {
         </div>
 
         <p className="nomba-card-copy">{connectionStatus}</p>
-        <p className="nomba-card-copy nomba-card-copy--muted">
-          For sandbox/demo testing, the person with the Nomba credentials can
-          open the sandbox dashboard, go to Developer or Webhooks, and paste the
-          webhook URL from the backend endpoint.
-        </p>
-        <ol className="nomba-steps">
-          <li>Open the Nomba sandbox or merchant dashboard.</li>
-          <li>Go to Developer, Integrations, or Webhooks.</li>
-          <li>Paste the webhook URL from the backend and save it.</li>
-          <li>Trigger a test payment to see the dashboard update.</li>
-        </ol>
       </article>
 
       <div className="quick-actions">

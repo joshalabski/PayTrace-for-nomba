@@ -1,21 +1,48 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { login, signup } from "../api/auth";
+
+const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+const PASSWORD_HINT =
+  "At least 8 characters, with an uppercase letter, a lowercase letter, and a number.";
 
 export default function LoginPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [mode, setMode] = useState("login"); // "login" | "signup"
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    if (email.trim() && password.trim()) {
-      navigate("/dashboard");
-    }
-  };
+    setError("");
 
-  const handleGoogle = () => {
-    navigate("/dashboard");
+    if (!email.trim() || !password.trim()) return;
+    if (mode === "signup" && !name.trim()) {
+      setError("Please tell us your name.");
+      return;
+    }
+    if (mode === "signup" && !PASSWORD_RULE.test(password)) {
+      setError(PASSWORD_HINT);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (mode === "login") {
+        await login(email.trim(), password);
+      } else {
+        await signup(name.trim(), email.trim(), password);
+      }
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -79,35 +106,30 @@ export default function LoginPage() {
             </svg>
           </div>
           <div>
-            <h1 className="auth-title">Welcome back</h1>
-            <p className="auth-sub">Sign in to your merchant dashboard</p>
+            <h1 className="auth-title">
+              {mode === "login" ? "Welcome back" : "Create your account"}
+            </h1>
+            <p className="auth-sub">
+              {mode === "login"
+                ? "Sign in to your merchant dashboard"
+                : "Set up your merchant dashboard in a minute"}
+            </p>
           </div>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
-          <button className="btn-google" type="button" onClick={handleGoogle}>
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"
+          {mode === "signup" && (
+            <label className="field">
+              <span className="field-label">Full name</span>
+              <input
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Adaeze Okafor"
+                required
               />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.65l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.11a6.6 6.6 0 0 1 0-4.22V7.05H2.18a11 11 0 0 0 0 9.9l3.66-2.84z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 4.75c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 1.46 14.97.5 12 .5A11 11 0 0 0 2.18 7.05l3.66 2.84C6.71 6.68 9.14 4.75 12 4.75z"
-              />
-            </svg>
-            Continue with Google
-          </button>
-
-          <div className="auth-divider">or</div>
+            </label>
+          )}
 
           <label className="field">
             <span className="field-label">Email</span>
@@ -138,21 +160,49 @@ export default function LoginPage() {
                 {showPassword ? "Hide" : "Show"}
               </button>
             </div>
+            {mode === "signup" && (
+              <p style={{ fontSize: "0.78rem", opacity: 0.65, margin: "0.35rem 0 0" }}>
+                {PASSWORD_HINT}
+              </p>
+            )}
           </label>
 
-          <div className="auth-row">
-            <label className="checkbox">
-              <input type="checkbox" defaultChecked />
-              <span>Remember me</span>
-            </label>
-            <a className="auth-link" href="#">
-              Forgot password?
-            </a>
-          </div>
+          {mode === "login" && (
+            <div className="auth-row">
+              <label className="checkbox">
+                <input type="checkbox" defaultChecked />
+                <span>Remember me</span>
+              </label>
+              <a className="auth-link" href="#">
+                Forgot password?
+              </a>
+            </div>
+          )}
 
-          <button className="btn-signin" type="submit">
-            Sign in
+          {error && (
+            <p style={{ color: "#e5484d", fontSize: "0.85rem", margin: "-0.25rem 0 0" }}>
+              {error}
+            </p>
+          )}
+
+          <button className="btn-signin" type="submit" disabled={loading}>
+            {loading ? "Please wait..." : mode === "login" ? "Sign in" : "Create account"}
           </button>
+
+          <p style={{ textAlign: "center", fontSize: "0.85rem", margin: "0.5rem 0 0" }}>
+            {mode === "login" ? "New here?" : "Already have an account?"}{" "}
+            <button
+              type="button"
+              className="auth-link"
+              style={{ background: "none", border: "none", cursor: "pointer" }}
+              onClick={() => {
+                setError("");
+                setMode((m) => (m === "login" ? "signup" : "login"));
+              }}
+            >
+              {mode === "login" ? "Sign up" : "Sign in"}
+            </button>
+          </p>
         </form>
       </div>
     </section>

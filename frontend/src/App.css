@@ -467,6 +467,21 @@ body {
   gap: 10px;
 }
 
+/* ============ INITIALS AVATAR ============ */
+.initials-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  font-family: var(--font-head);
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+  user-select: none;
+  line-height: 1;
+}
+
 /* ============ AVATAR BUTTON ============ */
 .avatar-btn {
   position: relative;
@@ -486,12 +501,13 @@ body {
 .avatar-btn:active {
   transform: scale(0.92);
 }
-.avatar-btn img {
-  width: 100%;
-  height: 100%;
+.avatar-btn img,
+.avatar-btn .initials-avatar {
+  width: 100% !important;
+  height: 100% !important;
   border-radius: 50%;
   object-fit: cover;
-  display: block;
+  display: flex;
   border: 2px solid var(--surface);
 }
 .avatar-ring {
@@ -1001,14 +1017,14 @@ body {
   padding: 5px 11px;
   border-radius: 999px;
 }
-.live-dot {
+.live-badge-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--green);
   position: relative;
 }
-.live-dot::after {
+.live-badge-dot::after {
   content: "";
   position: absolute;
   inset: -3px;

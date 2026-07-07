@@ -3,8 +3,10 @@ import cors from "cors";
 
 import { PORT } from "./config.js";
 import webhookRoute from "./routes/webhook.js";
-import connectRoute from "./routes/connect.js";
 import paymentsRoute from "./routes/payments.js";
+import authRoute from "./routes/auth.js";
+import merchantProfileRoute from "./routes/merchantProfile.js";
+import disputesRoute from "./routes/disputes.js";
 
 const app = express();
 
@@ -16,9 +18,10 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/nomba/webhook", webhookRoute);
-app.use("/testing/connect", connectRoute);
-app.use("/merchant/connect", connectRoute);
 app.use("/payments", paymentsRoute);
+app.use("/auth", authRoute);
+app.use("/merchant", merchantProfileRoute);
+app.use("/disputes", disputesRoute);
 
 app.use((_req, res) => {
   res.status(404).json({ ok: false, error: "Route not found" });
