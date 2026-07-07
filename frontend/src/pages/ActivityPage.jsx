@@ -1,17 +1,13 @@
 import { useEffect, useState } from "react";
-import { formatCurrency, formatDate } from "../utils/format";
+import { formatCurrency, formatDate, formatMethod } from "../utils/format";
 import { getPayments, toTransaction } from "../api/client";
-
-const methodLabel = {
-  card: "POS Card Tap",
-  transfer: "Bank Transfer",
-  ussd: "USSD Payment",
-};
+import TransactionModal from "../components/TransactionModal";
 
 export default function ActivityPage() {
   const [filter, setFilter] = useState("all");
   const [transactions, setTransactions] = useState([]);
   const [isLive, setIsLive] = useState(false);
+  const [selectedTx, setSelectedTx] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -70,7 +66,12 @@ export default function ActivityPage() {
           <div className="empty">No transactions yet.</div>
         ) : (
           visibleTransactions.map((tx) => (
-            <li key={tx.id} className={`tx tx--${tx.status}`}>
+            <li
+              key={tx.id}
+              className={`tx tx--${tx.status}`}
+              onClick={() => setSelectedTx(tx)}
+              style={{ cursor: "pointer" }}
+            >
               <div className="tx-icon" aria-hidden="true">
                 {tx.status === "success"
                   ? "✓"
@@ -81,7 +82,7 @@ export default function ActivityPage() {
               <div className="tx-main">
                 <div className="tx-title">{tx.customer}</div>
                 <div className="tx-method">
-                  {methodLabel[tx.method] || tx.method}
+                  {formatMethod(tx.method)}
                   <span className="dot"></span>
                   {formatDate(tx.date)}
                 </div>
@@ -94,6 +95,13 @@ export default function ActivityPage() {
           ))
         )}
       </ul>
+
+      {selectedTx && (
+        <TransactionModal
+          transaction={selectedTx}
+          onClose={() => setSelectedTx(null)}
+        />
+      )}
     </section>
   );
 }

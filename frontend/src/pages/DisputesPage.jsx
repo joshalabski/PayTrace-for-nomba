@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
 import { formatCurrency } from "../utils/format";
-import { authFetch } from "../api/auth";
+import { getDisputes, resolveDispute } from "../api/client";
 
 export default function DisputesPage() {
   const [disputes, setDisputes] = useState([]);
   const [error, setError] = useState("");
+  const [resolvingId, setResolvingId] = useState(null);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await authFetch("/disputes");
-        if (!response.ok) throw new Error("Failed to load disputes");
-        const data = await response.json();
+        const data = await getDisputes();
         setDisputes(Array.isArray(data) ? data : []);
       } catch (err) {
         setError(err.message || "Could not load disputes");
@@ -19,6 +18,21 @@ export default function DisputesPage() {
     };
     load();
   }, []);
+
+  const handleResolve = async (id) => {
+    setResolvingId(id);
+    setError("");
+    try {
+      const updated = await resolveDispute(id);
+      setDisputes((current) =>
+        current.map((d) => (d.id === id ? updated : d)),
+      );
+    } catch (err) {
+      setError(err.message || "Could not resolve dispute");
+    } finally {
+      setResolvingId(null);
+    }
+  };
 
   return (
     <section className="view view--active">
@@ -40,7 +54,7 @@ export default function DisputesPage() {
             <article key={item.id} className="dispute">
               <div className="dispute-top">
                 <div className="tx-icon" aria-hidden="true">
-                  ⚠
+                  {item.status === "resolved" ? "✓" : "⚠"}
                 </div>
                 <div className="dispute-info">
                   <div className="dispute-cust">{item.customer}</div>
@@ -51,9 +65,20 @@ export default function DisputesPage() {
                 <div className="dispute-amt">{formatCurrency(item.amount)}</div>
               </div>
               <div className="dispute-reason">{item.reason}</div>
-              <button className="dispute-btn" type="button">
-                Resolve dispute
-              </button>
+              {item.status === "resolved" ? (
+                <button className="dispute-btn" type="button" disabled>
+                  Resolved
+                </button>
+              ) : (
+                <button
+                  className="dispute-btn"
+                  type="button"
+                  onClick={() => handleResolve(item.id)}
+                  disabled={resolvingId === item.id}
+                >
+                  {resolvingId === item.id ? "Resolving..." : "Resolve dispute"}
+                </button>
+              )}
             </article>
           ))
         )}

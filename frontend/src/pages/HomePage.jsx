@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatCurrency } from "../utils/format";
-import { getMerchantProfile } from "../api/client";
+import { getMerchantProfile, checkHealth, getPayments, toTransaction } from "../api/client";
 
 export default function HomePage() {
   const [dashboardTransactions, setDashboardTransactions] = useState([]);
@@ -59,21 +59,11 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const backendUrl =
-      import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-
     const checkConnection = async () => {
       try {
-        const response = await fetch(`${backendUrl}/health`);
-        if (response.ok) {
-          setConnectionStatus("Connected. Ready to receive payments.");
-          setConnectionState("connected");
-        } else {
-          setConnectionStatus(
-            "Backend not reachable yet. Start the server and refresh the page.",
-          );
-          setConnectionState("error");
-        }
+        await checkHealth();
+        setConnectionStatus("Connected. Ready to receive payments.");
+        setConnectionState("connected");
         // eslint-disable-next-line no-unused-vars
       } catch (error) {
         setConnectionStatus(
@@ -85,12 +75,7 @@ export default function HomePage() {
 
     const loadTransactions = async () => {
       try {
-        const response = await fetch(`${backendUrl}/payments`);
-        if (!response.ok) {
-          return;
-        }
-
-        const incoming = await response.json();
+        const incoming = await getPayments();
         if (!Array.isArray(incoming)) {
           return;
         }
@@ -101,19 +86,7 @@ export default function HomePage() {
           let newPaymentToast = null;
 
           incoming.forEach((payment) => {
-            const normalizedPayment = {
-              id: payment.id || `nomba-${payment.receivedAt || Date.now()}`,
-              customer: payment.customer || "Customer",
-              method: payment.method || "card",
-              status:
-                payment.status === "success"
-                  ? "success"
-                  : payment.status === "failed"
-                    ? "failed"
-                    : "pending",
-              amount: Number(payment.amount || 0),
-              date: payment.receivedAt || new Date().toISOString(),
-            };
+            const normalizedPayment = toTransaction(payment);
 
             if (!existing.has(normalizedPayment.id)) {
               next.unshift(normalizedPayment);

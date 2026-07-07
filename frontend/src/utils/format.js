@@ -10,3 +10,11 @@ export const formatDate = (value) =>
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+
+const METHOD_LABELS = {
+  card: "POS Card Tap",
+  transfer: "Bank Transfer",
+  ussd: "USSD Payment",
+};
+
+export const formatMethod = (method) => METHOD_LABELS[method] || method;

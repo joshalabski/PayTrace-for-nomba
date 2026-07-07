@@ -46,3 +46,29 @@ export const toTransaction = (payment) => ({
   amount: Number(payment.amount || 0),
   date: payment.receivedAt || new Date().toISOString(),
 });
+
+export const getDisputes = async () => {
+  const response = await authFetch("/disputes");
+  if (!response.ok) throw new Error("Failed to load disputes");
+  return response.json();
+};
+
+// Files a new dispute against a payment. `reason` is required.
+export const createDispute = async ({ paymentId, customer, amount, reason }) => {
+  const response = await authFetch("/disputes", {
+    method: "POST",
+    body: JSON.stringify({ paymentId, customer, amount, reason }),
+  });
+  const data = await response.json();
+  if (!response.ok || !data.ok) throw new Error(data.error || "Failed to file dispute");
+  return data.dispute;
+};
+
+export const resolveDispute = async (id) => {
+  const response = await authFetch(`/disputes/${id}/resolve`, {
+    method: "PATCH",
+  });
+  const data = await response.json();
+  if (!response.ok || !data.ok) throw new Error(data.error || "Failed to resolve dispute");
+  return data.dispute;
+};
