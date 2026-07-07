@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  transactions as mockTransactions,
-  formatCurrency,
-  formatDate,
-} from "../data/mockData";
+import { formatCurrency, formatDate } from "../utils/format";
 import { getPayments, toTransaction } from "../api/client";
 
 const methodLabel = {
@@ -14,7 +10,7 @@ const methodLabel = {
 
 export default function ActivityPage() {
   const [filter, setFilter] = useState("all");
-  const [transactions, setTransactions] = useState(mockTransactions);
+  const [transactions, setTransactions] = useState([]);
   const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
@@ -22,19 +18,9 @@ export default function ActivityPage() {
       try {
         const payments = await getPayments();
         const real = payments.map(toTransaction);
-
-        setTransactions((current) => {
-          const existing = new Map(current.map((tx) => [tx.id, tx]));
-          real.forEach((tx) => {
-            if (!existing.has(tx.id)) {
-              existing.set(tx.id, tx);
-            }
-          });
-          // Keep newest first, real payments included alongside seed data.
-          return Array.from(existing.values()).sort(
-            (a, b) => new Date(b.date) - new Date(a.date),
-          );
-        });
+        setTransactions(
+          real.sort((a, b) => new Date(b.date) - new Date(a.date)),
+        );
         setIsLive(true);
       } catch (error) {
         console.error("Unable to load payments", error);
@@ -57,7 +43,7 @@ export default function ActivityPage() {
       <div className="view-head">
         <h2 className="view-title">Activity Feed</h2>
         <span className="live-badge">
-          <span className="live-dot"></span> {isLive ? "Live" : "Offline"}
+          <span className="live-badge-dot"></span> {isLive ? "Live" : "Offline"}
         </span>
       </div>
 

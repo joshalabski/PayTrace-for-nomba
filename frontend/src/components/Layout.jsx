@@ -1,16 +1,49 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import ProfileModal from "./ProfileModal";
+import InitialsAvatar from "./InitialsAvatar";
+import { getUser } from "../api/auth";
 
 const navItems = [
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/activity", label: "Activity" },
-  { to: "/disputes", label: "Disputes" },
+  {
+    to: "/dashboard",
+    label: "Dashboard",
+    icon: (
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="8" height="8" rx="1.5" />
+        <rect x="13" y="3" width="8" height="5" rx="1.5" />
+        <rect x="13" y="12" width="8" height="9" rx="1.5" />
+        <rect x="3" y="14" width="8" height="7" rx="1.5" />
+      </svg>
+    ),
+  },
+  {
+    to: "/activity",
+    label: "Activity",
+    icon: (
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 12h4l3 8 4-16 3 8h4" />
+      </svg>
+    ),
+  },
+  {
+    to: "/disputes",
+    label: "Disputes",
+    icon: (
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 9v4M12 17h.01" />
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      </svg>
+    ),
+  },
 ];
 
 export default function Layout() {
   const [theme, setTheme] = useState(
     () => document.documentElement.getAttribute("data-theme") || "light",
   );
+  const [merchantModalOpen, setMerchantModalOpen] = useState(false);
+  const currentUser = getUser();
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -85,8 +118,13 @@ export default function Layout() {
             className="avatar-btn"
             type="button"
             aria-label="View profile"
+            onClick={() => setMerchantModalOpen(true)}
           >
-            <img src="/avatar.png" alt="Profile" />
+            <InitialsAvatar
+              name={currentUser?.name}
+              email={currentUser?.email}
+              size={40}
+            />
             <span className="avatar-ring" aria-hidden="true"></span>
           </button>
         </div>
@@ -96,6 +134,8 @@ export default function Layout() {
         <Outlet />
       </main>
 
+      <ProfileModal open={merchantModalOpen} onClose={() => setMerchantModalOpen(false)} />
+
       <nav className="tabbar" aria-label="Primary">
         {navItems.map((item) => (
           <NavLink
@@ -103,6 +143,9 @@ export default function Layout() {
             to={item.to}
             className={({ isActive }) => `tab${isActive ? " tab--active" : ""}`}
           >
+            <span className="tab-icon" aria-hidden="true">
+              {item.icon}
+            </span>
             <span>{item.label}</span>
           </NavLink>
         ))}

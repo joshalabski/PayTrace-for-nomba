@@ -1,9 +1,25 @@
-import { disputes, formatCurrency } from "../data/mockData";
-
-// NOTE: the backend has no /disputes endpoint yet — this still reads
-// from mockData.js on purpose. Wire this up once a disputes route exists.
+import { useEffect, useState } from "react";
+import { formatCurrency } from "../utils/format";
+import { authFetch } from "../api/auth";
 
 export default function DisputesPage() {
+  const [disputes, setDisputes] = useState([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const response = await authFetch("/disputes");
+        if (!response.ok) throw new Error("Failed to load disputes");
+        const data = await response.json();
+        setDisputes(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setError(err.message || "Could not load disputes");
+      }
+    };
+    load();
+  }, []);
+
   return (
     <section className="view view--active">
       <div className="view-head">
@@ -14,8 +30,10 @@ export default function DisputesPage() {
         Nomba support with smart guidance.
       </p>
 
+      {error && <div className="empty">{error}</div>}
+
       <div className="disputes">
-        {disputes.length === 0 ? (
+        {!error && disputes.length === 0 ? (
           <div className="empty">No disputes yet.</div>
         ) : (
           disputes.map((item) => (
